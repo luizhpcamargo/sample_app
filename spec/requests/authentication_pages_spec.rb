@@ -24,6 +24,9 @@ describe "Authentication" do
         before { click_link "Home" }
         it { should_not have_selector('div.alert.alert-error') }
       end
+      
+      it { should_not have_link('Profile') }
+      it { should_not have_link('Settings') }
     end
     
     describe "with valid information" do
@@ -53,15 +56,31 @@ describe "Authentication" do
       describe "when attempting to visit a protected page" do
         before do
           visit edit_user_path(user)
-          fill_in "Email",    with: user.email
-          fill_in "Password", with: user.password
-          click_button "Sign in"
+          sign_in user
+          # fill_in "Email",    with: user.email
+          # fill_in "Password", with: user.password
+          # click_button "Sign in"
         end
         
         describe "after signing in" do
           
           it "should render the desired protected page" do
             page.should have_selector('title', text: 'Edit user')
+          end
+          
+          describe "when signing again" do
+            before do
+              delete signout_path
+              sign_in user
+              # visit signin_path
+              # fill_in "Email",    with: user.email
+              # fill_in "Password", with: user.password
+              # click_button "Sign in"
+            end
+            
+            it "should render the default (profile) page" do
+              page.should have_selector('title', text: user.name)
+            end
           end
         end
       end
@@ -82,6 +101,17 @@ describe "Authentication" do
           it { should have_selector('title', text: 'Sign in') }
         end
       end
+      describe "in the Microposts controller" do
+        describe "submitting to the create action" do
+          before { post microposts_path }
+          specify { response.should redirect_to(signin_path) }
+        end
+        
+        describe "submitting to the destroy action" do
+          before { delete micropost_path(FactoryGirl.create(:micropost)) }
+          specify { response.should redirect_to(signin_path) }
+        end
+      end
     end
     
     describe "as non-admin user" do
@@ -94,6 +124,14 @@ describe "Authentication" do
         before { delete user_path(user) }
         specify { response.should redirect_to(root_path) }
       end
-    end
+      describe "accessible admin attributes" do
+        it "should not allow change to admin" do
+          expect do
+              User.create({:name => "Teste", :password => "teste", :password_confirmation => "teste", :admin => true})
+          end.to raise_error(ActiveModel::MassAssignmentSecurity::Error)
+        end
+      end
+    end 
+
   end
 end

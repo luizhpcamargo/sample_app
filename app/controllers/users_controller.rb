@@ -4,18 +4,28 @@ class UsersController < ApplicationController
   before_filter :admin_user,      only: :destroy
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
   def new
-    @user = User.new
+    if !signed_in?
+      @user = User.new
+    else
+      redirect_to root_path
+    end
   end
   def create
-    @user = User.new(params[:user])
-    if @user.save
-      sign_in @user
-      flash[:success] = "Welcome to the Sample App!"
-      redirect_to @user
+    if !signed_in?
+      @user = User.new(params[:user])
+      if @user.save
+        sign_in @user
+        flash[:success] = "Welcome to the Sample App!"
+        redirect_to @user
+      else
+        render 'new'
+      end
     else
-      render 'new'
+      flash[:notice] = "You don't have access to create a new user while log in!"
+      redirect_to root_path
     end
   end
   
@@ -39,9 +49,16 @@ class UsersController < ApplicationController
   end
   
   def destroy
-    User.find(params[:id]).destroy
-    flash[:success] = "User destroyed."
-    redirect_to users_url
+    
+    user = User.find(params[:id])
+     if  current_user.admin && !user.admin
+       user.destroy
+       flash[:success] = "User destroyed."
+       redirect_to users_url
+     else
+       flash[:error] = "Admin users cannot destroy themselves"
+       redirect_to users_url
+     end    
   end
   
   private
