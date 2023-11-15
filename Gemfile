@@ -28,7 +28,7 @@ group :assets do
 end
 
 group :test do
-  gem 'capybara', '1.1.2'
+  gem 'capybara', '1.1.3'
   gem 'rb-fsevent', '0.9.1', :require => false
   gem 'growl', '1.0.3'
   gem 'guard-spork', '1.2.0'
